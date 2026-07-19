@@ -11,7 +11,8 @@ dist/
 .env.*
 !.env.example
 
-# Local databases (SQLite dev mode)
+# Local databases (embedded PGlite dev data)
+data/
 *.sqlite
 *.sqlite-journal
 *.db

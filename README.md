@@ -44,11 +44,25 @@ table above is documentation, not configuration.
 
 ```
 packages/core   @yagura/core   BNS client, status derivation, block-time estimation,
-                               alert rules, CLI. Phase 1 — done.
-apps/worker     @yagura/worker Poller + alert engine + Telegram bot. Phase 2–3 — pending.
+                               alert rules, Drizzle schema, CLI. Phases 1–2 — done.
+apps/worker     @yagura/worker Poller + alert engine (done) + Telegram bot & email
+                               notifiers (Phase 3 — pending).
 apps/web        @yagura/web    Next.js app: dashboard, /name/[fqn], /renew/[name],
                                /metrics. Phase 4 — pending.
 ```
+
+**Database:** Postgres everywhere, via Drizzle. Production points
+`YAGURA_DATABASE_URL` at any managed/free-tier Postgres; local dev and tests
+run [PGlite](https://pglite.dev) (real Postgres compiled to WASM, in-process)
+with zero setup — same schema, same SQL, no dialect drift. Migrations live in
+`packages/core/drizzle` and are applied automatically on worker boot.
+
+The worker polls every 10 minutes (configurable): it discovers names owned by
+tracked addresses, refreshes on-chain state, detects ownership changes
+("you no longer own X" — once, then expiry alerts stop), and enqueues due
+alert tiers into the `alerts_sent` ledger, whose unique index makes
+double-sending impossible. A failed fetch is always "no new information" —
+never "the name is gone", and never an availability alert.
 
 Data sources: the [BNS V2 indexer API](https://api.bnsv2.com) (by Strata Labs,
 the same API behind `bns-v2-sdk`) as the primary read path, and the
@@ -60,10 +74,19 @@ env-configurable (`YAGURA_*`, see `.env.example`).
 
 ```bash
 pnpm install
-pnpm test                 # unit tests (recorded fixtures, no network)
+pnpm build                # build packages (worker imports core's dist)
+pnpm test                 # core units (fixtures) + worker integration (PGlite)
 pnpm bns status muneeb.btc    # live mainnet lookup
 pnpm bns names SP17A1AM4TNYFPAZ75Z84X3D6R2F6DTJBDJ6B0YF
 pnpm bns price muneeb.btc     # renewal burn price in STX
+
+# run the watchtower locally (embedded DB, live mainnet):
+cd apps/worker
+pnpm ops add-user                      # → prints a user id
+pnpm ops track-address <id> SP...      # defensive: monitor an address
+pnpm ops track-name <id> rare.btc want # offensive: watch a name
+pnpm ops run-once && pnpm ops alerts   # one poll cycle, inspect the queue
+pnpm dev                               # poll forever
 ```
 
 ## Design rules

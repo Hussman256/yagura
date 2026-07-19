@@ -2,15 +2,25 @@
   "name": "@yagura/worker",
   "version": "0.1.0",
   "private": true,
-  "description": "Yagura polling + alert engine and Telegram bot. Built in Phases 2–3.",
+  "description": "Yagura polling + alert engine and Telegram bot.",
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "echo '@yagura/worker: nothing to build yet (Phase 2)'",
-    "test": "echo '@yagura/worker: no tests yet (Phase 2)'",
-    "typecheck": "echo '@yagura/worker: nothing to check yet (Phase 2)'"
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "dev": "pnpm --filter @yagura/core build && tsx src/index.ts",
+    "ops": "tsx src/ops.ts",
+    "start": "node dist/index.js"
   },
   "dependencies": {
-    "@yagura/core": "workspace:*"
+    "@yagura/core": "workspace:*",
+    "drizzle-orm": "^0.45.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.5"
   }
 }
