@@ -45,8 +45,8 @@ table above is documentation, not configuration.
 ```
 packages/core   @yagura/core   BNS client, status derivation, block-time estimation,
                                alert rules, Drizzle schema, CLI. Phases 1–2 — done.
-apps/worker     @yagura/worker Poller + alert engine (done) + Telegram bot & email
-                               notifiers (Phase 3 — pending).
+apps/worker     @yagura/worker Poller + alert engine + Telegram bot + pluggable
+                               email delivery. Phases 2–3 — done.
 apps/web        @yagura/web    Next.js app: dashboard, /name/[fqn], /renew/[name],
                                /metrics. Phase 4 — pending.
 ```
@@ -63,6 +63,20 @@ tracked addresses, refreshes on-chain state, detects ownership changes
 alert tiers into the `alerts_sent` ledger, whose unique index makes
 double-sending impossible. A failed fetch is always "no new information" —
 never "the name is gone", and never an availability alert.
+
+**Notifications.** After each poll the notifier drains the queue through every
+live channel a user has: Telegram (grammY bot, long polling) and email behind
+a pluggable provider interface (Resend implemented; `console` provider for
+dev). Emails go only to verified addresses (6-digit code via the bot's
+`/verify`), and every mail carries an unsubscribe link + `List-Unsubscribe`
+header. Dead channels heal themselves: a blocked bot or hard-bounced address
+flips the channel off; talking to the bot again turns it back on.
+
+**Telegram bot commands:**
+`/start` · `/address SP…` (monitor an address) · `/track name.btc`
+(auto-detects own vs want, asks if unsure) · `/watch name.btc` ·
+`/status name.btc` (instant lookup) · `/list` · `/untrack name.btc` ·
+`/email you@example.com` + `/verify CODE`
 
 Data sources: the [BNS V2 indexer API](https://api.bnsv2.com) (by Strata Labs,
 the same API behind `bns-v2-sdk`) as the primary read path, and the

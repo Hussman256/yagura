@@ -7,6 +7,7 @@
  *   pnpm ops track-address <userId> <SP...>    → monitor an address ('own')
  *   pnpm ops track-name <userId> <fqn> <mode>  → track one name (own|want)
  *   pnpm ops run-once                          → one live poll cycle
+ *   pnpm ops notify-once                       → drain the alert queue once
  *   pnpm ops state                             → dump name_state
  *   pnpm ops alerts                            → dump the alert ledger/queue
  */
@@ -20,7 +21,10 @@ import {
   users,
 } from "@yagura/core/db";
 
+import { createBot, telegramSenderFromBot } from "./bot.js";
 import { loadConfig } from "./config.js";
+import { buildEmailProvider } from "./email.js";
+import { drainAlerts } from "./notifier.js";
 import { runPollCycle } from "./poller.js";
 
 const config = loadConfig(process.env);
@@ -69,6 +73,26 @@ try {
       console.log(JSON.stringify(stats, null, 2));
       break;
     }
+    case "notify-once": {
+      const email = buildEmailProvider(config);
+      const telegram = config.telegramBotToken
+        ? telegramSenderFromBot(
+            createBot(config.telegramBotToken, {
+              db: handle.db,
+              bns: new YaguraBnsClient(),
+              email,
+            }),
+          )
+        : undefined;
+      const stats = await drainAlerts(handle.db, {
+        email,
+        telegram,
+        webBaseUrl: config.webBaseUrl,
+        log: console.log,
+      });
+      console.log(JSON.stringify(stats, null, 2));
+      break;
+    }
     case "state": {
       for (const row of await handle.db.select().from(nameState)) {
         console.log(
@@ -87,7 +111,7 @@ try {
     }
     default:
       throw new Error(
-        "usage: pnpm ops <add-user|track-address|track-name|run-once|state|alerts>",
+        "usage: pnpm ops <add-user|track-address|track-name|run-once|notify-once|state|alerts>",
       );
   }
 } finally {

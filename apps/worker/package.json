@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@yagura/core": "workspace:*",
-    "drizzle-orm": "^0.45.2"
+    "drizzle-orm": "^0.45.2",
+    "grammy": "^1.45.1"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

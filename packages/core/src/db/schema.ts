@@ -65,6 +65,16 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").notNull().default(false),
   /** False after a hard bounce/unsubscribe — channel is dead. */
   emailActive: boolean("email_active").notNull().default(true),
+  /** Short-lived code mailed out to prove email ownership (bot: /verify <code>). */
+  emailVerifyCode: text("email_verify_code"),
+  emailVerifyExpiresAt: timestamp("email_verify_expires_at", {
+    withTimezone: true,
+  }),
+  /** Capability token for the one-click unsubscribe link in every email. */
+  unsubscribeToken: uuid("unsubscribe_token")
+    .notNull()
+    .defaultRandom()
+    .unique(),
 });
 
 /** Addresses monitored defensively: every name they own is auto-tracked. */
