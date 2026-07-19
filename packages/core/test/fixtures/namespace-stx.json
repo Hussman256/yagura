@@ -1,0 +1,13 @@
+{
+  "current_burn_block": 958696,
+  "namespace": {
+    "namespace_string": "stx",
+    "launched_at": "0",
+    "lifetime": "0",
+    "namespace_manager": "none",
+    "price_function_base": "4",
+    "price_function_coeff": "10833",
+    "manager_transferable": false,
+    "can_update_price_function": true
+  }
+}

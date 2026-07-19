@@ -1,0 +1,17 @@
+{
+  "current_burn_block": 958696,
+  "namespace": {
+    "namespace_string": "btc",
+    "launched_at": "0",
+    "lifetime": "262800",
+    "namespace_manager": "none",
+    "price_function_base": "1000",
+    "price_function_coeff": "200",
+    "manager_transferable": false,
+    "can_update_price_function": true,
+    "total_names": "307853",
+    "active_names": "307853",
+    "expired_names": "0",
+    "revoked_names": "0"
+  }
+}

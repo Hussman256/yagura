@@ -1,0 +1,20 @@
+{
+  "name": "yagura",
+  "private": true,
+  "description": "Yagura — the watchtower for your BNS names. Monitoring and alerting for the Bitcoin Name System on Stacks.",
+  "license": "MIT",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "bns": "tsx packages/core/src/cli.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

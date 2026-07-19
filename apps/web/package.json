@@ -1,0 +1,16 @@
+{
+  "name": "@yagura/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Yagura web app: landing, dashboard, public name pages, one-tap renewal. Built in Phase 4.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "echo '@yagura/web: nothing to build yet (Phase 4)'",
+    "test": "echo '@yagura/web: no tests yet (Phase 4)'",
+    "typecheck": "echo '@yagura/web: nothing to check yet (Phase 4)'"
+  },
+  "dependencies": {
+    "@yagura/core": "workspace:*"
+  }
+}

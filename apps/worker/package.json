@@ -1,0 +1,16 @@
+{
+  "name": "@yagura/worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Yagura polling + alert engine and Telegram bot. Built in Phases 2–3.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "echo '@yagura/worker: nothing to build yet (Phase 2)'",
+    "test": "echo '@yagura/worker: no tests yet (Phase 2)'",
+    "typecheck": "echo '@yagura/worker: nothing to check yet (Phase 2)'"
+  },
+  "dependencies": {
+    "@yagura/core": "workspace:*"
+  }
+}

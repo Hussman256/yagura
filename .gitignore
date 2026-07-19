@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.next/
+*.tsbuildinfo
+
+# Environment — never commit secrets
+.env
+.env.*
+!.env.example
+
+# Local databases (SQLite dev mode)
+*.sqlite
+*.sqlite-journal
+*.db
+
+# Logs & OS noise
+*.log
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

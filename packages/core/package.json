@@ -1,0 +1,31 @@
+{
+  "name": "@yagura/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared BNS client, block-height estimation, and alert rules for Yagura.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "bns": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@stacks/transactions": "^7.0.6"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.5"
+  }
+}
