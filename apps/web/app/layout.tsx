@@ -55,7 +55,7 @@ export default function RootLayout({
                 metrics
               </Link>
               <a
-                href="https://github.com/yagura-bns/yagura"
+                href="https://github.com/Hussman256/yagura"
                 className="transition-colors hover:text-washi"
               >
                 source
