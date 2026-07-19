@@ -1,4 +1,5 @@
 import { mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 
@@ -26,8 +27,18 @@ export interface YaguraDbHandle {
   close: () => Promise<void>;
 }
 
-/** Bundled migrations live at <core package root>/drizzle, two levels up from this file. */
-const MIGRATIONS_FOLDER = fileURLToPath(new URL("../../drizzle", import.meta.url));
+/**
+ * Bundled migrations live at <core package root>/drizzle, two levels up from
+ * this file. Computed with path.join rather than `new URL("…", import.meta.url)`
+ * so bundlers (the web app's webpack) don't treat the folder as an importable
+ * asset — only the worker, which runs unbundled, ever calls migrate().
+ */
+const MIGRATIONS_FOLDER = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "drizzle",
+);
 
 export async function createDb(databaseUrl: string): Promise<YaguraDbHandle> {
   if (databaseUrl.startsWith("pglite://")) {

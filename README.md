@@ -47,8 +47,8 @@ packages/core   @yagura/core   BNS client, status derivation, block-time estimat
                                alert rules, Drizzle schema, CLI. Phases 1–2 — done.
 apps/worker     @yagura/worker Poller + alert engine + Telegram bot + pluggable
                                email delivery. Phases 2–3 — done.
-apps/web        @yagura/web    Next.js app: dashboard, /name/[fqn], /renew/[name],
-                               /metrics. Phase 4 — pending.
+apps/web        @yagura/web    Next.js app: landing, wallet dashboard, /name/[fqn],
+                               /renew/[fqn], /metrics, /unsubscribe. Phase 4 — done.
 ```
 
 **Database:** Postgres everywhere, via Drizzle. Production points
@@ -77,6 +77,25 @@ flips the channel off; talking to the bot again turns it back on.
 (auto-detects own vs want, asks if unsure) · `/watch name.btc` ·
 `/status name.btc` (instant lookup) · `/list` · `/untrack name.btc` ·
 `/email you@example.com` + `/verify CODE`
+
+**Web app** (`apps/web`, Next.js App Router + Tailwind, dark "watchtower at
+night" UI):
+
+- `/` — pitch + live counters read from the alert ledger
+- `/dashboard` — connect a wallet (Leather/Xverse via @stacks/connect) to see
+  every name you own with countdowns and renew buttons; a deep-link hands the
+  address to the Telegram bot for recurring alerts
+- `/name/[fqn]` — public, shareable live status page for any BNS name
+- `/renew/[fqn]` — the one-tap renewal deep-link every expiry alert carries:
+  opens the wallet with the `name-renewal` call pre-filled and a deny-mode
+  post-condition pinning the STX burn to the exact on-chain price
+- `/metrics` — public metrics from the operational tables (names monitored,
+  alerts delivered, names rescued, watches), honest zeros on a fresh deploy
+- `/unsubscribe?token=…` — one-click email opt-out (linked from every mail)
+
+The web app needs no database for its chain pages; point
+`YAGURA_DATABASE_URL` at the worker's Postgres to light up metrics and
+unsubscribe.
 
 Data sources: the [BNS V2 indexer API](https://api.bnsv2.com) (by Strata Labs,
 the same API behind `bns-v2-sdk`) as the primary read path, and the
