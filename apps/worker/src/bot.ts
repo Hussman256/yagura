@@ -10,6 +10,7 @@ import {
   cmdUntrack,
   cmdVerify,
   ensureUser,
+  parseStartPayload,
   START_TEXT,
   trackAs,
 } from "./commands.js";
@@ -41,7 +42,17 @@ export function createBot(token: string, deps: BotDeps): Bot {
     (text ?? "").split(/\s+/).slice(1).join(" ").trim();
 
   bot.command("start", async (ctx) => {
-    await ensureUser(db, String(ctx.chat.id));
+    const user = await ensureUser(db, String(ctx.chat.id));
+    // Deep links from the web app arrive as /start payloads.
+    const payload = parseStartPayload(arg(ctx.message?.text));
+    if (payload.kind === "address") {
+      await ctx.reply(await cmdAddress(db, user, payload.address));
+      return;
+    }
+    if (payload.kind === "watch") {
+      await ctx.reply(await trackAs(db, user, payload.fqn, "want"));
+      return;
+    }
     await ctx.reply(START_TEXT);
   });
 

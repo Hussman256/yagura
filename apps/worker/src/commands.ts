@@ -57,6 +57,34 @@ export async function ensureUser(
   return created!;
 }
 
+/**
+ * Parse a /start deep-link payload from the web app. Telegram only allows
+ * [A-Za-z0-9_-] in start payloads, so addresses travel plainly
+ * (`address-SP…`) while names — which contain dots — travel base64url
+ * (`w_<base64url(fqn)>`).
+ */
+export type StartPayload =
+  | { kind: "address"; address: string }
+  | { kind: "watch"; fqn: string }
+  | { kind: "none" };
+
+export function parseStartPayload(payload: string): StartPayload {
+  if (payload.startsWith("address-")) {
+    return { kind: "address", address: payload.slice("address-".length) };
+  }
+  if (payload.startsWith("w_")) {
+    try {
+      const fqn = Buffer.from(payload.slice(2), "base64url")
+        .toString("utf8")
+        .toLowerCase();
+      if (/^[a-z0-9_-]+\.[a-z0-9-]+$/.test(fqn)) return { kind: "watch", fqn };
+    } catch {
+      /* malformed — fall through */
+    }
+  }
+  return { kind: "none" };
+}
+
 export const START_TEXT =
   "Yagura — the watchtower for your BNS names.\n\n" +
   "/address SP… — monitor an address: expiry alerts for every name it owns\n" +

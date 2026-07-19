@@ -16,6 +16,7 @@ import {
   cmdUntrack,
   cmdVerify,
   ensureUser,
+  parseStartPayload,
 } from "../src/commands.js";
 import type { EmailProvider, EmailResult, OutboundEmail } from "../src/email.js";
 import type { BnsReader } from "../src/poller.js";
@@ -68,6 +69,27 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await handle.close();
+});
+
+describe("parseStartPayload", () => {
+  it("decodes the web app's deep-link payloads", () => {
+    expect(parseStartPayload(`address-${OWNER}`)).toEqual({
+      kind: "address",
+      address: OWNER,
+    });
+    const encoded = `w_${Buffer.from("muneeb.btc").toString("base64url")}`;
+    expect(parseStartPayload(encoded)).toEqual({ kind: "watch", fqn: "muneeb.btc" });
+  });
+
+  it("ignores empty, unknown, and malformed payloads", () => {
+    expect(parseStartPayload("")).toEqual({ kind: "none" });
+    expect(parseStartPayload("hello")).toEqual({ kind: "none" });
+    expect(parseStartPayload("w_%%%")).toEqual({ kind: "none" });
+    // Decodes but isn't a name.namespace — refused.
+    expect(parseStartPayload(`w_${Buffer.from("rm -rf /").toString("base64url")}`)).toEqual(
+      { kind: "none" },
+    );
+  });
 });
 
 describe("ensureUser", () => {

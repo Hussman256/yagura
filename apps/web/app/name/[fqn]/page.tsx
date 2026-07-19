@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { getBns, telegramBotUrl } from "@/lib/bns";
+import { getBns, telegramWatchUrl } from "@/lib/bns";
 import { describeExpiry, STATUS_META } from "@/lib/format";
 
 /**
@@ -46,7 +46,7 @@ export default async function NamePage({ params }: Props) {
   const meta = STATUS_META[state.status];
   const expiry = describeExpiry(state.renewalHeight, state.currentBurnBlock);
   const claimable = state.status === "available" || state.status === "unregistered";
-  const botUrl = telegramBotUrl(`watch-${decoded}`);
+  const botUrl = telegramWatchUrl(decoded);
   const registerUrl = `https://bns.one/register?search=${encodeURIComponent(decoded.split(".")[0] ?? decoded)}`;
 
   return (

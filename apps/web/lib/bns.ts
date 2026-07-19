@@ -25,5 +25,16 @@ export function telegramBotUrl(startPayload?: string): string | null {
   const username = process.env["YAGURA_TELEGRAM_BOT_USERNAME"];
   if (!username) return null;
   const base = `https://t.me/${username}`;
-  return startPayload ? `${base}?start=${encodeURIComponent(startPayload)}` : base;
+  return startPayload ? `${base}?start=${startPayload}` : base;
+}
+
+/**
+ * Deep-link that makes the bot watch a name on /start. Telegram payloads
+ * only allow [A-Za-z0-9_-] and max 64 chars, so the fqn (which contains a
+ * dot) travels base64url; the rare name too long to encode falls back to a
+ * plain bot link.
+ */
+export function telegramWatchUrl(fqn: string): string | null {
+  const payload = `w_${Buffer.from(fqn, "utf8").toString("base64url")}`;
+  return telegramBotUrl(payload.length <= 64 ? payload : undefined);
 }
