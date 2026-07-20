@@ -125,27 +125,33 @@ cd apps/web && pnpm dev                 # http://localhost:3000
 own vs want) · `/watch name.btc` · `/status name.btc` · `/list` ·
 `/untrack name.btc` · `/email you@example.com` + `/verify CODE`
 
-## Self-hosting (one documented path: Railway + Vercel)
+## Self-hosting (one documented path: Render + Vercel)
 
-The worker and database live on [Railway](https://railway.app); the web app
-on [Vercel](https://vercel.com). Both have hobby tiers that fit Yagura.
+The worker and database live on [Render](https://render.com) — provisioned
+together by the `render.yaml` blueprint in the repo root — and the web app
+on [Vercel](https://vercel.com). (Render background workers start at the
+paid `starter` instance; the free Postgres plan works but expires after
+30 days, so upgrade it for anything long-lived.)
 
 1. Fork/clone this repo and push it to your GitHub.
 2. Create a Telegram bot with [@BotFather](https://t.me/BotFather); note the
    token and the bot's username.
 3. (Optional) Create a [Resend](https://resend.com) API key and verified
    sender for email alerts — skip to run Telegram-only.
-4. On Railway: **New Project → Deploy Postgres**, then **New Service → GitHub
-   repo**, and set the service's Dockerfile path to `apps/worker/Dockerfile`.
-5. Give the worker service these variables:
-   `YAGURA_DATABASE_URL` = Railway's `DATABASE_URL` reference,
-   `YAGURA_TELEGRAM_BOT_TOKEN`, `YAGURA_WEB_BASE_URL` (your web URL),
-   and for email: `YAGURA_EMAIL_PROVIDER=resend`, `YAGURA_RESEND_API_KEY`,
-   `YAGURA_EMAIL_FROM`. Deploy — migrations run on boot.
+4. On Render: **New → Blueprint**, pick your fork. `render.yaml` provisions
+   the Postgres database and the `yagura-worker` Background Worker (native
+   Node — build `pnpm install` + workspace builds, start
+   `node apps/worker/dist/index.js`; migrations run on boot).
+5. Fill in the prompted variables: `YAGURA_TELEGRAM_BOT_TOKEN`,
+   `YAGURA_WEB_BASE_URL` (your Vercel URL), and — for email — switch
+   `YAGURA_EMAIL_PROVIDER` to `resend` and set `YAGURA_RESEND_API_KEY` +
+   `YAGURA_EMAIL_FROM`. `YAGURA_DATABASE_URL` is wired to the database
+   automatically.
 6. On Vercel: import the repo, set **Root Directory** to `apps/web`
    (Vercel detects Next.js + pnpm workspaces automatically).
-7. Give the web app `YAGURA_DATABASE_URL` (same Postgres, for
-   metrics/unsubscribe) and `YAGURA_TELEGRAM_BOT_USERNAME`.
+7. Give the web app `YAGURA_DATABASE_URL` (Render Postgres **external**
+   connection string, for metrics/unsubscribe) and
+   `YAGURA_TELEGRAM_BOT_USERNAME`.
 8. Deploy, then message your bot `/start`. Done — the tower is watching.
 
 An optional Hiro API key (`YAGURA_HIRO_API_KEY`, free at platform.hiro.so)

@@ -1,0 +1,58 @@
+# Yagura on Render — blueprint for the worker + its Postgres database.
+# In the Render dashboard: New → Blueprint → pick this repo, and both
+# resources are provisioned together. The web app deploys separately on
+# Vercel (see README).
+#
+# Plans: Render background workers have no free instance type — `starter`
+# is the smallest. The free Postgres plan works but expires after 30 days;
+# upgrade it (basic-256mb) for anything long-lived.
+
+databases:
+  - name: yagura-db
+    plan: free
+    databaseName: yagura
+    user: yagura
+
+services:
+  - type: worker
+    name: yagura-worker
+    runtime: node
+    plan: starter
+    # Monorepo build from the repo root: corepack picks the pnpm version
+    # from package.json's packageManager field; core builds before the
+    # worker because the worker imports its dist.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @yagura/core build && pnpm --filter @yagura/worker build
+    # The worker applies database migrations on boot, then polls forever.
+    startCommand: node apps/worker/dist/index.js
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      # Postgres connection — wired straight from the database above.
+      - key: YAGURA_DATABASE_URL
+        fromDatabase:
+          name: yagura-db
+          property: connectionString
+      # Poll cadence in minutes.
+      - key: YAGURA_POLL_INTERVAL_MINUTES
+        value: "10"
+      # Telegram bot token from @BotFather (bot + Telegram delivery are off
+      # without it). sync: false → entered in the dashboard, never in git.
+      - key: YAGURA_TELEGRAM_BOT_TOKEN
+        sync: false
+      # Public URL of the web app — used for renewal/unsubscribe links
+      # inside alert messages.
+      - key: YAGURA_WEB_BASE_URL
+        sync: false
+      # Email delivery: 'console' logs to stdout; set to 'resend' plus the
+      # two vars below for real email.
+      - key: YAGURA_EMAIL_PROVIDER
+        value: console
+      - key: YAGURA_RESEND_API_KEY
+        sync: false
+      - key: YAGURA_EMAIL_FROM
+        sync: false
+      # Optional Hiro API key (free at platform.hiro.so) for higher rate
+      # limits; the public tier handles hundreds of names fine.
+      - key: YAGURA_HIRO_API_KEY
+        sync: false
