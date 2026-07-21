@@ -2,20 +2,21 @@ import {
   estimateBurnBlockDate,
   formatApproxBlocks,
   splitFqn,
+  type BnsReader,
   type NameState,
 } from "@yagura/core";
 import {
   nameState,
+  pendingTracks,
   trackedAddresses,
   trackedNames,
   users,
   type YaguraDb,
 } from "@yagura/core/db";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, lt } from "drizzle-orm";
 
 import type { EmailProvider } from "./email.js";
 import { renderVerificationEmail } from "./messages.js";
-import type { BnsReader } from "./poller.js";
 
 /**
  * Telegram command logic, separated from grammY wiring so every handler is
@@ -116,6 +117,9 @@ export type TrackOutcome =
   | { kind: "done"; reply: string }
   | { kind: "ask"; fqn: string; reply: string };
 
+/** How long an "own or want?" question stays open before it's considered abandoned. */
+const PENDING_TRACK_TTL_MS = 10 * 60 * 1000;
+
 export async function cmdTrack(
   db: YaguraDb,
   bns: BnsReader,
@@ -157,11 +161,45 @@ export async function cmdTrack(
     };
   }
 
+  // The bot runs as a stateless webhook — there is no process memory to hold
+  // this question between the reply and the button tap, so it's a row.
+  await db
+    .insert(pendingTracks)
+    .values({
+      userId: user.id,
+      fqn,
+      expiresAt: new Date(Date.now() + PENDING_TRACK_TTL_MS),
+    })
+    .onConflictDoUpdate({
+      target: pendingTracks.userId,
+      set: { fqn, createdAt: new Date(), expiresAt: new Date(Date.now() + PENDING_TRACK_TTL_MS) },
+    });
   return {
     kind: "ask",
     fqn,
     reply: `${fqn} is owned by ${state.owner ?? "someone else"}. Track it as…`,
   };
+}
+
+/**
+ * Resolve and clear the open "own or want?" question for a user, if any and
+ * not expired. Called when the inline-button answer arrives.
+ */
+export async function takePendingTrack(
+  db: YaguraDb,
+  userId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .delete(pendingTracks)
+    .where(eq(pendingTracks.userId, userId))
+    .returning({ fqn: pendingTracks.fqn, expiresAt: pendingTracks.expiresAt });
+  if (!row || row.expiresAt.getTime() < Date.now()) return null;
+  return row.fqn;
+}
+
+/** Housekeeping: drop stale pending-track rows. Cheap enough to run per poll cycle. */
+export async function clearExpiredPendingTracks(db: YaguraDb): Promise<void> {
+  await db.delete(pendingTracks).where(lt(pendingTracks.expiresAt, new Date()));
 }
 
 export async function trackAs(

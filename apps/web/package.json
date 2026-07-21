@@ -17,6 +17,7 @@
     "@fontsource/shippori-mincho": "^5.3.0",
     "@stacks/connect": "^8.1.9",
     "@stacks/transactions": "^7.0.6",
+    "@yagura/bot": "workspace:*",
     "@yagura/core": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "next": "^15.4.4",

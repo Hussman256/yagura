@@ -21,4 +21,4 @@ export * from "./alerts.js";
 export { HttpError } from "./http.js";
 export { BnsApiClient, type BnsApiName } from "./bns-api.js";
 export { HiroClient } from "./hiro.js";
-export { YaguraBnsClient, splitFqn } from "./bns-client.js";
+export { YaguraBnsClient, splitFqn, type BnsReader } from "./bns-client.js";

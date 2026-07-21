@@ -2,18 +2,18 @@
   "name": "@yagura/worker",
   "version": "0.1.0",
   "private": true,
-  "description": "Yagura polling + alert engine and Telegram bot.",
+  "description": "Yagura's poller: a single-shot script run on a schedule by GitHub Actions. Refreshes tracked name state, enqueues due alerts, and drains the delivery queue, then exits.",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "dev": "pnpm --filter @yagura/core build && tsx src/index.ts",
-    "ops": "tsx src/ops.ts",
-    "start": "node dist/index.js"
+    "poll": "pnpm --filter @yagura/core build && pnpm --filter @yagura/bot build && tsx src/poll-once.ts",
+    "ops": "tsx src/ops.ts"
   },
   "dependencies": {
+    "@yagura/bot": "workspace:*",
     "@yagura/core": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "grammy": "^1.45.1"

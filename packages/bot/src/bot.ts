@@ -1,5 +1,6 @@
+import type { BnsReader } from "@yagura/core";
 import type { YaguraDb } from "@yagura/core/db";
-import { Bot, GrammyError, InlineKeyboard } from "grammy";
+import { Bot, GrammyError, InlineKeyboard, webhookCallback } from "grammy";
 
 import {
   cmdAddress,
@@ -12,18 +13,17 @@ import {
   ensureUser,
   parseStartPayload,
   START_TEXT,
+  takePendingTrack,
   trackAs,
 } from "./commands.js";
 import type { EmailProvider } from "./email.js";
 import type { TelegramSender } from "./notifier.js";
-import type { BnsReader } from "./poller.js";
 
 /**
  * grammY wiring: maps Telegram updates onto the plain handlers in
- * commands.ts. All state lives in the database except one small in-memory
- * map for the own-vs-want question (Telegram callback data is capped at 64
- * bytes — too small to carry long BNS names, so we key the pending name by
- * chat instead).
+ * commands.ts. All state — including the own-vs-want question between a
+ * /track reply and the button tap — lives in the database, because this bot
+ * runs as a stateless Vercel webhook: nothing survives between invocations.
  */
 
 export interface BotDeps {
@@ -35,8 +35,6 @@ export interface BotDeps {
 export function createBot(token: string, deps: BotDeps): Bot {
   const { db, bns, email } = deps;
   const bot = new Bot(token);
-  /** chatId → fqn awaiting an own/want answer. */
-  const pendingTrack = new Map<string, string>();
 
   const arg = (text: string | undefined): string =>
     (text ?? "").split(/\s+/).slice(1).join(" ").trim();
@@ -65,7 +63,6 @@ export function createBot(token: string, deps: BotDeps): Bot {
     const user = await ensureUser(db, String(ctx.chat.id));
     const outcome = await cmdTrack(db, bns, user, arg(ctx.message?.text));
     if (outcome.kind === "ask") {
-      pendingTrack.set(String(ctx.chat.id), outcome.fqn);
       await ctx.reply(outcome.reply, {
         reply_markup: new InlineKeyboard()
           .text("I own it 🛡", "track:own")
@@ -77,15 +74,13 @@ export function createBot(token: string, deps: BotDeps): Bot {
   });
 
   bot.callbackQuery(["track:own", "track:want"], async (ctx) => {
-    const chatId = String(ctx.chat?.id ?? "");
-    const fqn = pendingTrack.get(chatId);
+    const user = await ensureUser(db, String(ctx.chat?.id ?? ""));
     await ctx.answerCallbackQuery();
+    const fqn = await takePendingTrack(db, user.id);
     if (!fqn) {
       await ctx.reply("That choice expired — /track the name again.");
       return;
     }
-    pendingTrack.delete(chatId);
-    const user = await ensureUser(db, chatId);
     const mode = ctx.callbackQuery.data === "track:own" ? "own" : "want";
     await ctx.reply(await trackAs(db, user, fqn, mode));
   });
@@ -129,6 +124,20 @@ export function createBot(token: string, deps: BotDeps): Bot {
   });
 
   return bot;
+}
+
+/**
+ * Web-standard (fetch Request/Response) webhook handler for the Vercel API
+ * route. `secretToken` is checked against Telegram's
+ * `X-Telegram-Bot-Api-Secret-Token` header — set the same value when calling
+ * `setWebhook` so requests that don't come from Telegram are rejected before
+ * touching the database.
+ */
+export function createWebhookHandler(
+  bot: Bot,
+  secretToken: string,
+): (request: Request) => Promise<Response> {
+  return webhookCallback(bot, "std/http", { secretToken });
 }
 
 /** Outbound alert delivery through the same bot, with blocked-detection. */

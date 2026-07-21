@@ -21,6 +21,16 @@ export interface YaguraBnsClientOptions {
   hiro?: HiroClientOptions;
 }
 
+/**
+ * The slice of {@link YaguraBnsClient}'s public API that consumers (the
+ * poller, the bot's /track and /status commands) actually need — small
+ * enough to fake in tests without a real client.
+ */
+export interface BnsReader {
+  resolveName(fqn: string): Promise<NameState>;
+  listNamesOwnedBy(address: string): Promise<OwnedName[]>;
+}
+
 /** Split "muneeb.btc" → { name: "muneeb", namespace: "btc" }. */
 export function splitFqn(fqn: string): { name: string; namespace: string } {
   const trimmed = fqn.trim().toLowerCase();

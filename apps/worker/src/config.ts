@@ -1,17 +1,20 @@
 /**
- * Worker configuration, read once at boot from YAGURA_* environment
- * variables. Defaults are chosen so `pnpm dev` works with zero setup:
- * an embedded PGlite database in ./data, the public API endpoints, no
- * Telegram (until a token is set), and console-logged email.
+ * Worker configuration, read once per invocation from YAGURA_* environment
+ * variables. Defaults are chosen so local dev works with zero setup: an
+ * embedded PGlite database in ./data, the public API endpoints, no Telegram
+ * (until a token is set), and console-logged email.
+ *
+ * Poll cadence is no longer a worker concern — the production entrypoint
+ * (poll-once.ts) runs exactly once per invocation, and the schedule lives in
+ * `.github/workflows/poll.yml`'s cron.
  */
 
 export interface WorkerConfig {
   databaseUrl: string;
-  pollIntervalMs: number;
   hiroApiBase: string | undefined;
   hiroApiKey: string | undefined;
   bnsApiBase: string | undefined;
-  /** Telegram bot token; when unset, the bot and Telegram delivery are off. */
+  /** Telegram bot token; when unset, Telegram delivery is off. */
   telegramBotToken: string | undefined;
   /** Email backend: 'resend' for real delivery, 'console' logs to stdout. */
   emailProvider: "resend" | "console";
@@ -23,10 +26,6 @@ export interface WorkerConfig {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv): WorkerConfig {
-  const intervalMinutes = Number(env["YAGURA_POLL_INTERVAL_MINUTES"] ?? 10);
-  if (!Number.isFinite(intervalMinutes) || intervalMinutes <= 0) {
-    throw new Error("YAGURA_POLL_INTERVAL_MINUTES must be a positive number");
-  }
   const emailProvider = env["YAGURA_EMAIL_PROVIDER"] || "console";
   if (emailProvider !== "resend" && emailProvider !== "console") {
     throw new Error(
@@ -38,7 +37,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): WorkerConfig {
   }
   return {
     databaseUrl: env["YAGURA_DATABASE_URL"] || "pglite://./data/yagura-dev",
-    pollIntervalMs: intervalMinutes * 60 * 1000,
     hiroApiBase: env["YAGURA_HIRO_API_BASE"] || undefined,
     hiroApiKey: env["YAGURA_HIRO_API_KEY"] || undefined,
     bnsApiBase: env["YAGURA_BNSV2_API_BASE"] || undefined,

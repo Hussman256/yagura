@@ -27,30 +27,36 @@ MIT licensed, built to run on free tiers.
 ## Architecture
 
 ```
-                        ┌───────────────────────────────┐
-   Hiro Stacks API ◄────┤  apps/worker                  │
-   BNS V2 indexer  ◄────┤  poll every 10 min:           │
-   (api.bnsv2.com)      │  discover → refresh state →   │
-                        │  owner changes → enqueue      │────► Telegram (grammY)
-                        │  then drain alert queue       │────► Email (Resend/console)
-                        └──────────────┬────────────────┘
-                                       │ Drizzle ORM
-                        ┌──────────────▼────────────────┐
-                        │  Postgres                     │
-                        │  users · tracked_addresses ·  │
-                        │  tracked_names · name_state · │
-                        │  alerts_sent (ledger+queue)   │
-                        └──────────────▲────────────────┘
-                                       │ read-only-ish
-                        ┌──────────────┴────────────────┐
-   Hiro Stacks API ◄────┤  apps/web (Next.js)           │
-   wallet (Leather/ ◄───┤  landing · dashboard ·        │
-   Xverse via           │  /name/[fqn] · /renew/[fqn] · │
-   @stacks/connect)     │  /metrics · /unsubscribe      │
-                        └───────────────────────────────┘
-              shared logic: packages/core (@yagura/core)
-   BNS client · status rules · block-time · alert tiers · DB schema
+                        ┌────────────────────────────────┐
+   Hiro Stacks API ◄────┤  GitHub Actions (cron */10)    │
+   BNS V2 indexer  ◄────┤  apps/worker poll-once.ts:     │
+   (api.bnsv2.com)      │  discover → refresh state →    │
+                        │  owner changes → enqueue →     │────► Telegram (send-only)
+                        │  drain alert queue, then exit  │────► Email (Resend/console)
+                        └───────────────┬────────────────┘
+                                        │ Drizzle ORM
+                        ┌───────────────▼────────────────┐
+                        │  Postgres (Neon)               │
+                        │  users · tracked_addresses ·   │
+                        │  tracked_names · name_state ·  │
+                        │  alerts_sent (ledger+queue) ·  │
+                        │  pending_tracks                │
+                        └───────────────▲────────────────┘
+                                        │
+                        ┌───────────────┴────────────────┐
+   Hiro Stacks API ◄────┤  apps/web (Next.js, Vercel)    │
+   wallet (Leather/ ◄───┤  landing · dashboard ·         │
+   Xverse via           │  /name/[fqn] · /renew/[fqn] ·  │
+   @stacks/connect)     │  /metrics · /unsubscribe ·     │◄──── Telegram webhook
+   Telegram ────────────┤  /api/telegram/webhook (bot)   │      (inbound commands)
+                        └────────────────────────────────┘
+              shared logic: packages/core (@yagura/core), packages/bot (@yagura/bot)
+   BNS client · status rules · block-time · alert tiers · DB schema · bot commands · email
 ```
+
+Three free-tier services, no server to keep alive: GitHub Actions runs the
+poller on a schedule, Vercel hosts the web app *and* the bot's webhook
+(both stateless), Neon holds the one shared Postgres database.
 
 ## BNS V2 facts this code relies on
 
@@ -78,18 +84,23 @@ documentation, not configuration.
 ```
 packages/core   @yagura/core   BNS client, status derivation, block-time estimation,
                                alert-tier rules, Drizzle schema, dev CLI
-apps/worker     @yagura/worker Poller + alert engine + Telegram bot + email delivery
+packages/bot    @yagura/bot    Telegram bot commands, webhook handler, alert
+                               rendering, pluggable email — shared by worker + web
+apps/worker     @yagura/worker Single-shot poll cycle (run by GitHub Actions cron):
+                               refresh state, enqueue alerts, drain the queue
 apps/web        @yagura/web    Next.js app: landing, wallet dashboard, /name/[fqn],
-                               /renew/[fqn], /metrics, /unsubscribe
+                               /renew/[fqn], /metrics, /unsubscribe, and the
+                               Telegram webhook route (/api/telegram/webhook)
 ```
 
 **Database.** Postgres everywhere, via Drizzle. Production points
-`YAGURA_DATABASE_URL` at any managed Postgres; the worker's local dev and all
-tests use [PGlite](https://pglite.dev) (real Postgres compiled to WASM,
-in-process) with zero setup — same schema, same SQL, no dialect drift.
-Migrations ship in `packages/core/drizzle` and apply automatically on worker
-boot. (The web app needs a real `postgres://` URL for metrics/unsubscribe;
-without one it serves its chain-only pages happily.)
+`YAGURA_DATABASE_URL` at [Neon](https://neon.tech) (or any managed Postgres);
+local dev and all tests use [PGlite](https://pglite.dev) (real Postgres
+compiled to WASM, in-process) with zero setup — same schema, same SQL, no
+dialect drift. Migrations ship in `packages/core/drizzle` and apply
+automatically at the start of every poll run. (The web app needs the same
+`postgres://` URL for metrics/unsubscribe/the bot; without one it serves its
+chain-only pages happily and the webhook route fails closed.)
 
 **Reliability rules.** A failed fetch is "no new information" — never "the
 name is gone", and never an availability alert; ambiguous chain data derives
@@ -115,7 +126,7 @@ pnpm ops add-user                       # → prints a user id
 pnpm ops track-address <id> SP...       # defensive: monitor an address
 pnpm ops track-name <id> rare.btc want  # offensive: watch a name
 pnpm ops run-once && pnpm ops alerts    # one poll cycle, inspect the queue
-pnpm dev                                # poll forever (+ bot if token set)
+pnpm poll                               # the same cycle GitHub Actions runs on cron
 
 # run the web app:
 cd apps/web && pnpm dev                 # http://localhost:3000
@@ -125,37 +136,57 @@ cd apps/web && pnpm dev                 # http://localhost:3000
 own vs want) · `/watch name.btc` · `/status name.btc` · `/list` ·
 `/untrack name.btc` · `/email you@example.com` + `/verify CODE`
 
-## Self-hosting (one documented path: Render + Vercel)
+## Self-hosting (one documented path: Neon + Vercel + GitHub Actions, all free)
 
-The worker and database live on [Render](https://render.com) — provisioned
-together by the `render.yaml` blueprint in the repo root — and the web app
-on [Vercel](https://vercel.com). (Render background workers start at the
-paid `starter` instance; the free Postgres plan works but expires after
-30 days, so upgrade it for anything long-lived.)
+No server to keep alive, anywhere. Three free tiers, wired together:
+
+| Service | Runs | Free tier fit |
+| --- | --- | --- |
+| [Neon](https://neon.tech) | Postgres — the one shared database | Generous free plan, no expiry |
+| [Vercel](https://vercel.com) | Web app + Telegram webhook route | Free Hobby plan; both are on-demand serverless |
+| [GitHub Actions](https://github.com/features/actions) | The poller, on a `*/10 * * * *` cron | Free for public repos (~4,320 min/mo used, well under the free private-repo quota too) |
 
 1. Fork/clone this repo and push it to your GitHub.
 2. Create a Telegram bot with [@BotFather](https://t.me/BotFather); note the
-   token and the bot's username.
+   token and the bot's username. Pick a long random string yourself for the
+   webhook secret (e.g. `openssl rand -hex 32`) — Telegram never generates
+   this one, you invent it and use it in both places below.
 3. (Optional) Create a [Resend](https://resend.com) API key and verified
    sender for email alerts — skip to run Telegram-only.
-4. On Render: **New → Blueprint**, pick your fork. `render.yaml` provisions
-   the Postgres database and the `yagura-worker` Background Worker (native
-   Node — build `pnpm install` + workspace builds, start
-   `node apps/worker/dist/index.js`; migrations run on boot).
-5. Fill in the prompted variables: `YAGURA_TELEGRAM_BOT_TOKEN`,
-   `YAGURA_WEB_BASE_URL` (your Vercel URL), and — for email — switch
-   `YAGURA_EMAIL_PROVIDER` to `resend` and set `YAGURA_RESEND_API_KEY` +
-   `YAGURA_EMAIL_FROM`. `YAGURA_DATABASE_URL` is wired to the database
-   automatically.
-6. On Vercel: import the repo, set **Root Directory** to `apps/web`
-   (Vercel detects Next.js + pnpm workspaces automatically).
-7. Give the web app `YAGURA_DATABASE_URL` (Render Postgres **external**
-   connection string, for metrics/unsubscribe) and
-   `YAGURA_TELEGRAM_BOT_USERNAME`.
-8. Deploy, then message your bot `/start`. Done — the tower is watching.
+4. Create a [Neon](https://neon.tech) project and copy its `postgres://`
+   connection string (the pooled one is fine — every consumer here is
+   either a single script run or a short-lived serverless invocation).
+5. **On GitHub:** repo **Settings → Secrets and variables → Actions**, add
+   as *secrets*: `YAGURA_DATABASE_URL` (the Neon string),
+   `YAGURA_TELEGRAM_BOT_TOKEN`, `YAGURA_WEB_BASE_URL` (your Vercel URL —
+   fill in after step 6), and — for email — `YAGURA_RESEND_API_KEY` +
+   `YAGURA_EMAIL_FROM`. Add `YAGURA_EMAIL_PROVIDER` as a *variable* (not a
+   secret) set to `resend`, or leave it unset to log emails to the Actions
+   log instead of sending them. `.github/workflows/poll.yml` picks all of
+   these up on its cron schedule — no further setup, it starts running
+   the moment the secrets exist.
+6. **On Vercel:** import the repo, set **Root Directory** to `apps/web`
+   (Next.js + the pnpm workspace are auto-detected). Add these env vars:
+   `YAGURA_DATABASE_URL` (same Neon string — for metrics/unsubscribe/bot),
+   `YAGURA_TELEGRAM_BOT_TOKEN`, `YAGURA_TELEGRAM_WEBHOOK_SECRET` (the
+   string from step 2), and `YAGURA_TELEGRAM_BOT_USERNAME` (for deep-links).
+   For email verification codes from the bot's `/email` command, also add
+   `YAGURA_EMAIL_PROVIDER=resend` + `YAGURA_RESEND_API_KEY` +
+   `YAGURA_EMAIL_FROM`. Deploy.
+7. Register the webhook with Telegram (once — it stays registered across
+   deploys):
+   ```
+   curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=<VERCEL_URL>/api/telegram/webhook&secret_token=<WEBHOOK_SECRET>"
+   ```
+8. Back on GitHub, fill in `YAGURA_WEB_BASE_URL` from step 5 with the real
+   Vercel URL now that it exists (it's only used for renewal/unsubscribe
+   links inside alert messages).
+9. Message your bot `/start`. Done — the tower is watching, and nothing
+   you deployed has an idle cost.
 
 An optional Hiro API key (`YAGURA_HIRO_API_KEY`, free at platform.hiro.so)
-raises rate limits; the public tier is fine for hundreds of names.
+raises rate limits; the public tier is fine for hundreds of names. Add it
+as a GitHub Actions secret alongside the others in step 5.
 
 ## What Yagura deliberately is not
 

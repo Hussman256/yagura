@@ -1,0 +1,39 @@
+name: poll
+
+# The watchtower's heartbeat: every 10 minutes, run the worker's single-shot
+# poll-once script against the Neon database, then exit. No server to keep
+# alive — GitHub Actions owns the schedule. See apps/worker/src/poll-once.ts.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: poll
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @yagura/worker poll
+        env:
+          # Neon Postgres connection string (pooled or direct both work;
+          # the script runs once and exits, so pooled is fine).
+          YAGURA_DATABASE_URL: ${{ secrets.YAGURA_DATABASE_URL }}
+          # Outbound delivery only — inbound commands are handled by the
+          # Vercel webhook, a separate process from this script.
+          YAGURA_TELEGRAM_BOT_TOKEN: ${{ secrets.YAGURA_TELEGRAM_BOT_TOKEN }}
+          YAGURA_WEB_BASE_URL: ${{ secrets.YAGURA_WEB_BASE_URL }}
+          YAGURA_EMAIL_PROVIDER: ${{ vars.YAGURA_EMAIL_PROVIDER }}
+          YAGURA_RESEND_API_KEY: ${{ secrets.YAGURA_RESEND_API_KEY }}
+          YAGURA_EMAIL_FROM: ${{ secrets.YAGURA_EMAIL_FROM }}
+          YAGURA_HIRO_API_KEY: ${{ secrets.YAGURA_HIRO_API_KEY }}

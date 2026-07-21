@@ -21,19 +21,3 @@ export async function mapLimit<T>(
   );
   await Promise.all(workers);
 }
-
-/** Sleep that resolves early when the given AbortSignal fires (for shutdown). */
-export function interruptibleSleep(
-  ms: number,
-  signal?: AbortSignal,
-): Promise<void> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(done, ms);
-    function done(): void {
-      clearTimeout(timer);
-      signal?.removeEventListener("abort", done);
-      resolve();
-    }
-    signal?.addEventListener("abort", done, { once: true });
-  });
-}

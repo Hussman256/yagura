@@ -32,6 +32,9 @@ importers:
       '@stacks/transactions':
         specifier: ^7.0.6
         version: 7.5.0
+      '@yagura/bot':
+        specifier: workspace:*
+        version: link:../../packages/bot
       '@yagura/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -72,6 +75,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@yagura/bot':
+        specifier: workspace:*
+        version: link:../../packages/bot
       '@yagura/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -88,6 +94,28 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.1)
+
+  packages/bot:
+    dependencies:
+      '@yagura/core':
+        specifier: workspace:*
+        version: link:../core
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@electric-sql/pglite@0.5.4)(@types/pg@8.20.0)(pg@8.22.0)
+      grammy:
+        specifier: ^1.45.1
+        version: 1.45.1
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -4912,7 +4940,7 @@ snapshots:
 
   jsontokens@4.0.1:
     dependencies:
-      '@noble/hashes': 1.1.5
+      '@noble/hashes': 1.8.0
       '@noble/secp256k1': 1.7.1
       base64-js: 1.5.1
 

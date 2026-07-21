@@ -21,10 +21,10 @@ import {
   users,
 } from "@yagura/core/db";
 
-import { createBot, telegramSenderFromBot } from "./bot.js";
+import { buildEmailProvider, drainAlerts, telegramSenderFromBot } from "@yagura/bot";
+import { Bot } from "grammy";
+
 import { loadConfig } from "./config.js";
-import { buildEmailProvider } from "./email.js";
-import { drainAlerts } from "./notifier.js";
 import { runPollCycle } from "./poller.js";
 
 const config = loadConfig(process.env);
@@ -76,13 +76,7 @@ try {
     case "notify-once": {
       const email = buildEmailProvider(config);
       const telegram = config.telegramBotToken
-        ? telegramSenderFromBot(
-            createBot(config.telegramBotToken, {
-              db: handle.db,
-              bns: new YaguraBnsClient(),
-              email,
-            }),
-          )
+        ? telegramSenderFromBot(new Bot(config.telegramBotToken))
         : undefined;
       const stats = await drainAlerts(handle.db, {
         email,

@@ -1,7 +1,5 @@
-import type { WorkerConfig } from "./config.js";
-
 /**
- * Pluggable email delivery. The worker depends only on the EmailProvider
+ * Pluggable email delivery. Callers depend only on the EmailProvider
  * interface; concrete backends are chosen from config. Adding a provider
  * (Postmark, SES, …) means implementing one function — nothing else changes.
  */
@@ -71,11 +69,23 @@ export class ResendEmailProvider implements EmailProvider {
   }
 }
 
+/** The subset of app config buildEmailProvider needs — kept minimal so both
+ * the worker's poller and the web app's webhook route can build one from
+ * their own env-derived config without depending on each other's types. */
+export interface EmailConfig {
+  emailProvider: "resend" | "console";
+  resendApiKey?: string | undefined;
+  emailFrom: string;
+}
+
 /** Instantiate the configured backend. */
-export function buildEmailProvider(config: WorkerConfig): EmailProvider {
+export function buildEmailProvider(config: EmailConfig): EmailProvider {
   if (config.emailProvider === "resend") {
-    // loadConfig guarantees the key exists when the provider is resend.
-    return new ResendEmailProvider(config.resendApiKey!, config.emailFrom);
+    // Callers are expected to validate the key exists before choosing resend.
+    if (!config.resendApiKey) {
+      throw new Error("resendApiKey is required when emailProvider is 'resend'");
+    }
+    return new ResendEmailProvider(config.resendApiKey, config.emailFrom);
   }
   return new ConsoleEmailProvider();
 }

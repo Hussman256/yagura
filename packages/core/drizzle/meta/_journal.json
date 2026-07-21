@@ -15,6 +15,13 @@
       "when": 1784453145361,
       "tag": "0001_email-verification",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784640916191,
+      "tag": "0002_pending-tracks",
+      "breakpoints": true
     }
   ]
 }

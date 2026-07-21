@@ -22,6 +22,10 @@ import {
  *   double-sending impossible even across racing pollers) and the outbound
  *   queue (rows with `delivered_at` null and `suppressed` false are what the
  *   Phase 3 notifier picks up). It also feeds the public metrics counters.
+ * - `pending_tracks` holds the Telegram bot's "own or want?" question while
+ *   it's awaiting an inline-button answer. The bot runs as a stateless
+ *   Vercel webhook (no process memory between invocations), so this has to
+ *   be a table, not a Map — one open question per user, expiring on its own.
  */
 
 export const trackModeEnum = pgEnum("track_mode", ["own", "want"]);
@@ -172,3 +176,20 @@ export const alertsSent = pgTable(
     ),
   ],
 );
+
+/**
+ * The Telegram bot's outstanding "I own it / I want it" question for a user,
+ * asked by /track when the name's owner isn't one of the user's tracked
+ * addresses. One row per user (webhook invocations are stateless, so this
+ * can't live in memory); short-lived by `expiresAt`, cleared on answer.
+ */
+export const pendingTracks = pgTable("pending_tracks", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  fqn: text("fqn").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});

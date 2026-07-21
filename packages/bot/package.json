@@ -1,0 +1,31 @@
+{
+  "name": "@yagura/bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Telegram bot commands, webhook handler, alert message rendering, and pluggable email delivery for Yagura. Shared by the GitHub Actions poller (outbound alerts) and the Vercel webhook route (inbound commands).",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@yagura/core": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "grammy": "^1.45.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.5"
+  }
+}

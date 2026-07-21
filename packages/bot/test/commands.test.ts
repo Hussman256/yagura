@@ -1,6 +1,7 @@
-import type { NameState, OwnedName } from "@yagura/core";
+import type { BnsReader, NameState, OwnedName } from "@yagura/core";
 import {
   createDb,
+  pendingTracks,
   trackedAddresses,
   trackedNames,
   users,
@@ -15,11 +16,12 @@ import {
   cmdTrack,
   cmdUntrack,
   cmdVerify,
+  clearExpiredPendingTracks,
   ensureUser,
   parseStartPayload,
+  takePendingTrack,
 } from "../src/commands.js";
 import type { EmailProvider, EmailResult, OutboundEmail } from "../src/email.js";
-import type { BnsReader } from "../src/poller.js";
 
 const OWNER = "SP17A1AM4TNYFPAZ75Z84X3D6R2F6DTJBDJ6B0YF";
 
@@ -131,13 +133,19 @@ describe("cmdTrack", () => {
     expect(rows[0]).toMatchObject({ fqn: "muneeb.btc", mode: "own" });
   });
 
-  it("asks own-vs-want when the owner is unknown to us", async () => {
+  it("asks own-vs-want when the owner is unknown to us, persisting the question to the DB", async () => {
     const user = await ensureUser(handle.db, "42");
     bns.states.set("stranger.btc", activeState("stranger.btc", "SP2SOMEONEELSE"));
 
     const outcome = await cmdTrack(handle.db, bns, user, "stranger.btc");
     expect(outcome.kind).toBe("ask");
     expect(await handle.db.select().from(trackedNames)).toHaveLength(0);
+
+    // The question survives as a row — simulating the webhook's next,
+    // stateless invocation when the inline button is tapped.
+    const pending = await handle.db.select().from(pendingTracks);
+    expect(pending).toHaveLength(1);
+    expect(pending[0]).toMatchObject({ userId: user.id, fqn: "stranger.btc" });
   });
 
   it("watches unregistered names directly", async () => {
@@ -148,6 +156,50 @@ describe("cmdTrack", () => {
     expect(outcome.kind).toBe("done");
     const rows = await handle.db.select().from(trackedNames);
     expect(rows[0]).toMatchObject({ fqn: "free.btc", mode: "want" });
+  });
+});
+
+describe("takePendingTrack / clearExpiredPendingTracks", () => {
+  it("resolves and clears the pending question exactly once", async () => {
+    const user = await ensureUser(handle.db, "42");
+    bns.states.set("stranger.btc", activeState("stranger.btc", "SP2SOMEONEELSE"));
+    await cmdTrack(handle.db, bns, user, "stranger.btc");
+
+    expect(await takePendingTrack(handle.db, user.id)).toBe("stranger.btc");
+    // Second call — nothing left to take (the row is deleted, not just read).
+    expect(await takePendingTrack(handle.db, user.id)).toBeNull();
+  });
+
+  it("refuses an expired question even if the row hasn't been swept yet", async () => {
+    const user = await ensureUser(handle.db, "42");
+    await handle.db.insert(pendingTracks).values({
+      userId: user.id,
+      fqn: "stale.btc",
+      expiresAt: new Date(Date.now() - 1000),
+    });
+    expect(await takePendingTrack(handle.db, user.id)).toBeNull();
+  });
+
+  it("sweeps expired rows", async () => {
+    const user = await ensureUser(handle.db, "42");
+    await handle.db.insert(pendingTracks).values({
+      userId: user.id,
+      fqn: "stale.btc",
+      expiresAt: new Date(Date.now() - 1000),
+    });
+    await clearExpiredPendingTracks(handle.db);
+    expect(await handle.db.select().from(pendingTracks)).toHaveLength(0);
+  });
+
+  it("a fresh /track replaces rather than duplicates a still-open question", async () => {
+    const user = await ensureUser(handle.db, "42");
+    bns.states.set("first.btc", activeState("first.btc", "SP2SOMEONEELSE"));
+    bns.states.set("second.btc", activeState("second.btc", "SP2SOMEONEELSE"));
+    await cmdTrack(handle.db, bns, user, "first.btc");
+    await cmdTrack(handle.db, bns, user, "second.btc");
+
+    expect(await handle.db.select().from(pendingTracks)).toHaveLength(1);
+    expect(await takePendingTrack(handle.db, user.id)).toBe("second.btc");
   });
 });
 

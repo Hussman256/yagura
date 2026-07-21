@@ -9,7 +9,14 @@ const nextConfig: NextConfig = {
   // its bundled SQL migrations relative to its own file on disk — none of
   // that survives webpack bundling. Client components only ever import
   // core's pure functions, which bundle fine.
-  serverExternalPackages: ["@electric-sql/pglite", "pg", "drizzle-orm", "@yagura/core"],
+  serverExternalPackages: [
+    "@electric-sql/pglite",
+    "pg",
+    "drizzle-orm",
+    "@yagura/core",
+    "@yagura/bot",
+    "grammy",
+  ],
 };
 
 export default nextConfig;

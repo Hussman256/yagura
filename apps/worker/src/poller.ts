@@ -4,6 +4,7 @@ import {
   estimateBurnBlockDate,
   mostUrgent,
   type AlertTier,
+  type BnsReader,
   type NameState,
   type OwnedName,
 } from "@yagura/core";
@@ -34,11 +35,7 @@ import { mapLimit } from "./util.js";
  * ever marked available (or unowned) off the back of an error.
  */
 
-/** The slice of the BNS client the poller needs — injectable for tests. */
-export interface BnsReader {
-  resolveName(fqn: string): Promise<NameState>;
-  listNamesOwnedBy(address: string): Promise<OwnedName[]>;
-}
+export type { BnsReader };
 
 export interface PollOptions {
   /** Max in-flight API requests (politeness toward public rate limits). */
