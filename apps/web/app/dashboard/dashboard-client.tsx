@@ -39,6 +39,12 @@ const TONE_CLASS = {
   urgent: "text-shu",
 } as const;
 
+const TONE_DOT_CLASS = {
+  calm: "bg-moss",
+  warn: "bg-amber",
+  urgent: "bg-shu animate-beacon-pulse",
+} as const;
+
 export function DashboardClient({ botUrl }: Props) {
   const [wallet, setWallet] = useState<WalletState>({ kind: "loading" });
   const [names, setNames] = useState<NamesState>({ kind: "idle" });
@@ -97,14 +103,17 @@ export function DashboardClient({ botUrl }: Props) {
 
   if (wallet.kind === "disconnected") {
     return (
-      <div className="border border-ink-line p-10 text-center">
-        <p className="mx-auto max-w-md text-sm leading-relaxed text-washi-dim">
+      <div className="relative overflow-hidden border border-ink-line p-10 text-center">
+        <span className="watermark right-4 -bottom-8 text-[8rem]" aria-hidden>
+          櫓
+        </span>
+        <p className="relative mx-auto max-w-md text-sm leading-relaxed text-washi-dim">
           Connect a Stacks wallet (Leather, Xverse, …) to see every BNS name
           you own with live expiry countdowns and one-tap renewal.
         </p>
         <button
           onClick={connectWallet}
-          className="mt-8 border border-shu bg-shu px-8 py-3 font-mono text-sm text-ink transition-colors hover:bg-transparent hover:text-shu"
+          className="relative mt-8 border border-shu bg-shu px-8 py-3 font-mono text-sm text-ink transition-all hover:bg-transparent hover:text-shu hover:shadow-[0_0_24px_-4px_rgb(229_72_77_/_0.6)]"
         >
           → connect wallet
         </button>
@@ -167,7 +176,14 @@ export function DashboardClient({ botUrl }: Props) {
                 : (describeExpiry(name.renewalHeight, names.currentBurnBlock) ?? "—");
             const renewable = name.status === "active" || name.status === "grace";
             return (
-              <li key={name.fqn} className="flex flex-wrap items-center gap-x-6 gap-y-2 py-5">
+              <li
+                key={name.fqn}
+                className="-mx-4 flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-5 transition-colors hover:bg-ink-raised"
+              >
+                <span
+                  className={`h-1.5 w-1.5 shrink-0 rounded-full ${TONE_DOT_CLASS[tone]}`}
+                  aria-hidden
+                />
                 <Link
                   href={`/name/${encodeURIComponent(name.fqn)}`}
                   className="min-w-48 font-display text-xl break-all text-washi hover:text-shu"
@@ -177,7 +193,9 @@ export function DashboardClient({ botUrl }: Props) {
                 <span className={`border px-2 py-0.5 font-mono text-[11px] ${meta.className}`}>
                   {meta.label}
                 </span>
-                <span className={`font-mono text-xs ${TONE_CLASS[tone]}`}>{expiry}</span>
+                <span className={`font-mono text-xs tabular-nums ${TONE_CLASS[tone]}`}>
+                  {expiry}
+                </span>
                 {renewable && (
                   <Link
                     href={`/renew/${encodeURIComponent(name.fqn)}`}

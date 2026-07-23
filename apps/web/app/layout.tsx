@@ -18,7 +18,12 @@ export const metadata: Metadata = {
     "Never lose the BNS name you own. Never miss the one you want. Expiry alerts and availability watches for Bitcoin Name System names on Stacks.",
 };
 
-/** Tower silhouette — the one mark Yagura is remembered by. */
+/**
+ * Tower silhouette with a lit, breathing beacon — the one mark Yagura is
+ * remembered by. The beacon dot pulses independent of the rest of the mark
+ * (own animation, own timing) so it reads as "the fire is lit" rather than
+ * a static logo.
+ */
 function TowerMark({ className = "h-6 w-6" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
@@ -29,6 +34,7 @@ function TowerMark({ className = "h-6 w-6" }: { className?: string }) {
         strokeLinecap="square"
       />
       <path d="M12 21v-4" stroke="currentColor" strokeWidth="1.4" />
+      <circle cx="12" cy="4" r="1.4" fill="var(--color-shu)" className="animate-beacon-pulse" />
     </svg>
   );
 }
@@ -39,10 +45,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
-        <header className="border-b border-ink-line">
+        <div className="grain" aria-hidden />
+        <header className="sticky top-0 z-50 border-b border-ink-line bg-ink/85 backdrop-blur-md">
           <nav className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
-            <Link href="/" className="flex items-center gap-2.5 text-washi">
-              <TowerMark className="h-6 w-6 text-shu" />
+            <Link href="/" className="group flex items-center gap-2.5 text-washi">
+              <TowerMark className="h-6 w-6 text-ink-line transition-colors group-hover:text-shu" />
               <span className="font-display text-lg tracking-wide">
                 Yagura <span className="text-washi-dim">櫓</span>
               </span>
@@ -63,10 +70,11 @@ export default function RootLayout({
             </div>
           </nav>
         </header>
-        <main className="mx-auto max-w-5xl px-5">{children}</main>
+        <main className="relative mx-auto max-w-5xl px-5">{children}</main>
         <footer className="mt-24 border-t border-ink-line">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-5 py-6 font-mono text-xs text-washi-dim">
-            <span>
+            <span className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-moss animate-scan" aria-hidden />
               yagura（櫓）— the lookout tower of a Japanese castle. MIT licensed.
             </span>
             <span>

@@ -39,12 +39,17 @@ export default async function UnsubscribePage({
     }
   }
 
+  const toneClass = outcome === "done" ? "text-moss" : outcome === "error" ? "text-shu" : "text-washi-dim";
+
   return (
     <div className="py-24">
-      <h1 className="font-display text-3xl text-washi">
+      <p className="rise rise-1 font-mono text-[13px] tracking-[0.25em] text-washi-dim uppercase">
+        email preferences
+      </p>
+      <h1 className="rise rise-2 mt-4 font-display text-3xl text-washi">
         {outcome === "done" ? "Unsubscribed." : "Hm."}
       </h1>
-      <p className="mt-4 max-w-xl text-sm leading-relaxed text-washi-dim">
+      <p className={`rise rise-3 mt-4 max-w-xl text-sm leading-relaxed ${toneClass}`}>
         {outcome === "done" &&
           "No more emails from Yagura. Telegram alerts (if linked) and your tracked names are unchanged — send /email to the bot any time to switch email back on."}
         {outcome === "invalid" &&

@@ -5,6 +5,7 @@ import { BNS_V2_CONTRACT_ID, splitFqn } from "@yagura/core";
 
 import { getBns } from "@/lib/bns";
 import { describeExpiry, STATUS_META } from "@/lib/format";
+import { EmberBar } from "@/components/ember-bar";
 import { RenewButton } from "./renew-button";
 
 /**
@@ -95,7 +96,7 @@ export default async function RenewPage({ params }: Props) {
         <span className={`border px-3 py-1 font-mono text-xs ${meta.className}`}>{meta.label}</span>
       </div>
 
-      <dl className="rise rise-3 mt-10 grid max-w-2xl gap-x-10 gap-y-6 border-t border-ink-line pt-8 font-mono text-sm md:grid-cols-2">
+      <dl className="rise rise-3 mt-10 grid max-w-2xl gap-x-10 gap-y-6 border border-ink-line bg-ink-raised/40 p-6 font-mono text-sm md:grid-cols-2">
         <div>
           <dt className="text-xs tracking-wider text-washi-dim uppercase">
             {state.status === "active" ? "expires" : "grace ends / expired"}
@@ -111,7 +112,15 @@ export default async function RenewPage({ params }: Props) {
         </div>
       </dl>
 
-      <div className="rise rise-4 mt-12">
+      <div className="rise rise-4 mt-8 max-w-2xl">
+        <EmberBar
+          renewalHeight={state.renewalHeight}
+          currentBurnBlock={state.currentBurnBlock}
+          status={state.status}
+        />
+      </div>
+
+      <div className="rise rise-5 mt-12">
         <RenewButton
           contractId={BNS_V2_CONTRACT_ID}
           name={parsed.name}

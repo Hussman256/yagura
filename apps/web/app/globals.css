@@ -4,31 +4,46 @@
  * Yagura — "watchtower at night".
  * Sumi-ink ground, washi-paper text, one vermillion accent reserved for
  * urgency and action. Everything else is structure: thin rules, mono data,
- * generous dark space.
+ * generous dark space. The beacon/ember motif ties expiry urgency to the
+ * literal watch-fire a yagura tower keeps burning.
  */
 @theme {
   --color-ink: #0b0d12; /* sumi ink — page ground */
+  --color-ink-deep: #06070a; /* below the ground — vignette floor */
   --color-ink-raised: #12151d; /* cards, surfaces */
   --color-ink-line: #232838; /* hairline borders */
   --color-washi: #e9e4d6; /* warm paper — primary text */
   --color-washi-dim: #8f8b7e; /* secondary text */
-  --color-shu: #e5484d; /* vermillion — urgency, CTA */
+  --color-shu: #e5484d; /* vermillion — urgency, CTA, the watch-fire */
   --color-moss: #6fbf8b; /* healthy / available-good */
   --color-amber: #d9a441; /* grace / caution */
 
   --font-display: "Shippori Mincho", "Yu Mincho", serif;
   --font-body: "IBM Plex Sans", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
+
+  --animate-rise: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-beacon-pulse: beacon-pulse 3.2s ease-in-out infinite;
+  --animate-beacon-sweep: beacon-sweep 8s linear infinite;
+  --animate-ember-rise: ember-rise 5.5s ease-in infinite;
+  --animate-marquee: marquee 32s linear infinite;
+  --animate-grain: grain-shift 1s steps(8) infinite;
+  --animate-scan: scan 3.5s ease-in-out infinite;
 }
 
 :root {
   color-scheme: dark;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--color-ink);
   color: var(--color-washi);
   font-family: var(--font-body);
+  position: relative;
   /* Faint vertical sightlines — the lookout's grid. */
   background-image: repeating-linear-gradient(
     90deg,
@@ -44,6 +59,69 @@ body {
   color: var(--color-ink);
 }
 
+/* Thin, on-theme scrollbar (Firefox + WebKit). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-line) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink-line);
+  border: 2px solid var(--color-ink);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-washi-dim);
+}
+
+/* ---------------------------------------------------------------------
+ * Grain — a fixed, animated noise field over the whole viewport. Breaks
+ * up the flat dark ground so it reads as paper/ink rather than a screen.
+ * feTurbulence noise, shifted a few steps per second; kept extremely
+ * subtle (opacity .035) so it's felt more than seen.
+ * ------------------------------------------------------------------- */
+.grain {
+  position: fixed;
+  inset: -10%;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'%3E%3C/feTurbulence%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'%3E%3C/rect%3E%3C/svg%3E");
+  animation: var(--animate-grain);
+}
+
+/* Radial vermillion glow, used once behind the hero for atmosphere. */
+.beacon-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 70% 55% at 82% 8%,
+    rgb(229 72 77 / 0.14),
+    transparent 65%
+  );
+}
+
+/* Giant background kanji watermark — felt as texture, not read as text. */
+.watermark {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  user-select: none;
+  font-family: var(--font-display);
+  color: var(--color-washi);
+  opacity: 0.035;
+  line-height: 1;
+}
+
 /* Staggered page-load reveal used across pages. */
 @keyframes rise {
   from {
@@ -56,9 +134,91 @@ body {
   }
 }
 .rise {
-  animation: rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: var(--animate-rise);
 }
-.rise-1 { animation-delay: 0.05s; }
-.rise-2 { animation-delay: 0.15s; }
-.rise-3 { animation-delay: 0.25s; }
-.rise-4 { animation-delay: 0.35s; }
+.rise-1 {
+  animation-delay: 0.05s;
+}
+.rise-2 {
+  animation-delay: 0.15s;
+}
+.rise-3 {
+  animation-delay: 0.25s;
+}
+.rise-4 {
+  animation-delay: 0.35s;
+}
+.rise-5 {
+  animation-delay: 0.45s;
+}
+
+/* The beacon light atop the tower mark: a slow, breathing pulse. */
+@keyframes beacon-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+    filter: drop-shadow(0 0 0px var(--color-shu));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px var(--color-shu));
+  }
+}
+
+/* A thin signal beam sweeping around the beacon, like a lookout scanning. */
+@keyframes beacon-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Embers drifting up off the watch-fire, fading as they cool. */
+@keyframes ember-rise {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-140px) translateX(var(--drift, 12px));
+    opacity: 0;
+  }
+}
+
+/* Status-ticker marquee. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Short scan-line flicker for live indicators. */
+@keyframes scan {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Respect reduced-motion: kill decorative animation, keep instant states. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

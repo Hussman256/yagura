@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import { getPublicMetrics } from "@/lib/metrics";
+import { CountUp } from "@/components/count-up";
+import { Reveal } from "@/components/reveal";
 
 export const metadata: Metadata = { title: "Metrics · Yagura" };
 export const revalidate = 300;
@@ -38,16 +40,18 @@ export default async function MetricsPage() {
       )}
 
       <div className="mt-12 grid grid-cols-1 gap-px border border-ink-line bg-ink-line sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-ink-raised p-6">
-            <div className="font-mono text-4xl text-washi">
-              {stat.value === undefined ? "—" : stat.value.toLocaleString("en-US")}
+        {stats.map((stat, i) => (
+          <Reveal key={stat.label} delayMs={i * 90} className="bg-ink-raised">
+            <div className="h-full p-6">
+              <div className="font-mono text-4xl text-washi tabular-nums">
+                {stat.value === undefined ? "—" : <CountUp value={stat.value} />}
+              </div>
+              <div className="mt-2 font-mono text-xs tracking-wider text-washi-dim uppercase">
+                {stat.label}
+              </div>
+              <div className="mt-3 text-xs leading-relaxed text-washi-dim">{stat.hint}</div>
             </div>
-            <div className="mt-2 font-mono text-xs tracking-wider text-washi-dim uppercase">
-              {stat.label}
-            </div>
-            <div className="mt-3 text-xs leading-relaxed text-washi-dim">{stat.hint}</div>
-          </div>
+          </Reveal>
         ))}
       </div>
 
@@ -60,22 +64,30 @@ export default async function MetricsPage() {
             Nothing delivered yet — the tower was just built.
           </p>
         ) : (
-          <div className="mt-6 flex h-40 items-end gap-2 border-b border-ink-line pb-px">
-            {weekly.map((week) => (
-              <div key={week.week} className="group flex flex-1 flex-col items-center gap-2">
-                <span className="font-mono text-[10px] text-washi-dim opacity-0 transition-opacity group-hover:opacity-100">
-                  {week.count}
-                </span>
-                <div
-                  className="w-full max-w-14 bg-shu/80 transition-colors group-hover:bg-shu"
-                  style={{ height: `${Math.max(4, (week.count / max) * 120)}px` }}
-                />
-                <span className="font-mono text-[10px] text-washi-dim">
-                  {week.week.slice(5)}
-                </span>
+          <Reveal>
+            <div className="relative mt-6 flex h-40 items-end gap-2 border-b border-ink-line pb-px">
+              {/* Faint horizontal gridlines — quarter marks of the tallest bar. */}
+              <div className="pointer-events-none absolute inset-x-0 top-0 bottom-px flex flex-col justify-between" aria-hidden>
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="border-t border-ink-line/60" />
+                ))}
               </div>
-            ))}
-          </div>
+              {weekly.map((week) => (
+                <div key={week.week} className="group relative flex flex-1 flex-col items-center gap-2">
+                  <span className="font-mono text-[10px] text-washi-dim opacity-0 transition-opacity group-hover:opacity-100">
+                    {week.count}
+                  </span>
+                  <div
+                    className="w-full max-w-14 bg-gradient-to-t from-shu to-shu/60 shadow-[0_0_16px_-6px_rgb(229_72_77_/_0.8)] transition-[filter] group-hover:brightness-125"
+                    style={{ height: `${Math.max(4, (week.count / max) * 120)}px` }}
+                  />
+                  <span className="font-mono text-[10px] text-washi-dim">
+                    {week.week.slice(5)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Reveal>
         )}
       </section>
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { getBns, telegramWatchUrl } from "@/lib/bns";
 import { describeExpiry, STATUS_META } from "@/lib/format";
+import { EmberBar } from "@/components/ember-bar";
 
 /**
  * Public status page for any BNS name — resolves live on request (cached
@@ -61,7 +62,7 @@ export default async function NamePage({ params }: Props) {
         </span>
       </div>
 
-      <dl className="rise rise-3 mt-12 grid max-w-2xl gap-x-10 gap-y-6 border-t border-ink-line pt-8 font-mono text-sm md:grid-cols-2">
+      <dl className="rise rise-3 mt-12 grid max-w-2xl gap-x-10 gap-y-6 border border-ink-line bg-ink-raised/40 p-6 font-mono text-sm md:grid-cols-2">
         <div>
           <dt className="text-xs tracking-wider text-washi-dim uppercase">owner</dt>
           <dd className="mt-1 break-all text-washi">{state.owner ?? "—"}</dd>
@@ -78,7 +79,7 @@ export default async function NamePage({ params }: Props) {
         </div>
         <div>
           <dt className="text-xs tracking-wider text-washi-dim uppercase">renewal height</dt>
-          <dd className="mt-1 text-washi">
+          <dd className="mt-1 text-washi tabular-nums">
             {state.renewalHeight?.toLocaleString("en-US") ?? "—"}
             <span className="text-washi-dim"> / now {state.currentBurnBlock.toLocaleString("en-US")}</span>
           </dd>
@@ -95,7 +96,15 @@ export default async function NamePage({ params }: Props) {
         </div>
       </dl>
 
-      <div className="rise rise-4 mt-12 flex flex-wrap gap-4">
+      <div className="rise rise-4 mt-8 max-w-2xl">
+        <EmberBar
+          renewalHeight={state.renewalHeight}
+          currentBurnBlock={state.currentBurnBlock}
+          status={state.status}
+        />
+      </div>
+
+      <div className="rise rise-5 mt-12 flex flex-wrap gap-4">
         {claimable ? (
           <a
             href={registerUrl}
