@@ -61,12 +61,6 @@ export default function RootLayout({
               <Link href="/metrics" className="transition-colors hover:text-washi">
                 metrics
               </Link>
-              <a
-                href="https://github.com/Hussman256/yagura"
-                className="transition-colors hover:text-washi"
-              >
-                source
-              </a>
             </div>
           </nav>
         </header>
@@ -75,7 +69,7 @@ export default function RootLayout({
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-5 py-6 font-mono text-xs text-washi-dim">
             <span className="flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-moss animate-scan" aria-hidden />
-              yagura（櫓）— the lookout tower of a Japanese castle. MIT licensed.
+              yagura（櫓）— the lookout tower of a Japanese castle.
             </span>
             <span>
               complements{" "}
