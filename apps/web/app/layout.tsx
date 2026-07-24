@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { ThemeToggle } from "@/components/theme-toggle";
+
 // Fonts ship with the repo via @fontsource — no build-time network fetch,
 // so `pnpm build` works offline and behind firewalls.
 import "@fontsource/shippori-mincho/500.css";
@@ -45,6 +47,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen antialiased">
+        {/*
+         * Runs before hydration so the correct theme is set on first paint —
+         * without this, a returning light-mode visitor would flash dark.
+         * Falls back to system preference when nothing is stored yet.
+         */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var t=localStorage.getItem('yagura-theme');" +
+              "if(t!=='light'&&t!=='dark'){t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}" +
+              "document.documentElement.setAttribute('data-theme',t);}catch(e){}})();",
+          }}
+        />
         <div className="grain" aria-hidden />
         <header className="sticky top-0 z-50 border-b border-ink-line bg-ink/85 backdrop-blur-md">
           <nav className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
@@ -61,6 +76,7 @@ export default function RootLayout({
               <Link href="/metrics" className="transition-colors hover:text-washi">
                 metrics
               </Link>
+              <ThemeToggle />
             </div>
           </nav>
         </header>
@@ -71,12 +87,19 @@ export default function RootLayout({
               <span className="h-1.5 w-1.5 rounded-full bg-moss animate-scan" aria-hidden />
               yagura（櫓）— the lookout tower of a Japanese castle.
             </span>
-            <span>
-              complements{" "}
-              <a href="https://bns.one" className="underline decoration-ink-line underline-offset-4 hover:text-washi">
-                bns.one
-              </a>{" "}
-              · not affiliated
+            <span className="flex items-center gap-5">
+              <a
+                href="https://github.com/Hussman256/yagura"
+                className="transition-colors hover:text-washi"
+              >
+                github
+              </a>
+              <a
+                href="https://x.com/Yagura_btc"
+                className="transition-colors hover:text-washi"
+              >
+                x
+              </a>
             </span>
           </div>
         </footer>

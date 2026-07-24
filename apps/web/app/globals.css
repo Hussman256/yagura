@@ -35,6 +35,34 @@
   color-scheme: dark;
 }
 
+/*
+ * Light mode — "washi paper by day". Same structure, same accent, the
+ * ground and ink roles swap: the page becomes paper, the sumi-ink text
+ * becomes the dark figure on it. Vermillion/moss/amber are deepened
+ * slightly so they still meet contrast as text on a light ground.
+ * Toggled by ThemeToggle setting data-theme on <html>; see theme-init in
+ * layout.tsx for the pre-hydration flash guard.
+ */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-ink: #f4efe2;
+  --color-ink-deep: #e8dfc7;
+  --color-ink-raised: #fbf8ef;
+  --color-ink-line: #ded3b8;
+  --color-washi: #1c1911;
+  --color-washi-dim: #6c6550;
+  --color-shu: #b8272c;
+  --color-moss: #2f7a4f;
+  --color-amber: #93690f;
+}
+:root[data-theme="light"] .beacon-glow {
+  background: radial-gradient(
+    ellipse 70% 55% at 82% 8%,
+    rgb(184 39 44 / 0.1),
+    transparent 65%
+  );
+}
+
 html {
   scroll-behavior: smooth;
 }

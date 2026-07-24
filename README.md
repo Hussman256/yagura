@@ -21,8 +21,15 @@ Yagura is the push-based notification layer that complements
 [BNS One](https://bns.one)'s dashboard — we alert, they handle registration.
 MIT licensed, built to run on free tiers.
 
-> **Status:** feature-complete MVP (monitor + alert + one-tap renew).
-> Screenshots: *pending first hosted deployment.*
+> **Status:** feature-complete MVP (monitor + alert + one-tap renew), live at
+> [yagura-two.vercel.app](https://yagura-two.vercel.app).
+
+## Screenshots
+
+The Telegram bot in action — `/start`, then `/track muneeb.btc` auto-detecting
+that the name is owned by someone else and asking own-vs-want:
+
+![Yagura Telegram bot: /start and /track flow](docs/screenshots/telegram-bot.jpg)
 
 ## Architecture
 

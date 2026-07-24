@@ -17,22 +17,12 @@ const URGENT_WINDOW_BLOCKS = 7 * BURN_BLOCKS_PER_DAY;
 
 type Tone = "calm" | "warn" | "urgent";
 
-const TONE_STYLES: Record<Tone, { bar: string; glow: string; text: string }> = {
-  calm: {
-    bar: "bg-moss",
-    glow: "shadow-[0_0_10px_2px_rgb(111_191_139_/_0.5)]",
-    text: "text-moss",
-  },
-  warn: {
-    bar: "bg-amber",
-    glow: "shadow-[0_0_10px_2px_rgb(217_164_65_/_0.5)]",
-    text: "text-amber",
-  },
-  urgent: {
-    bar: "bg-shu",
-    glow: "shadow-[0_0_12px_3px_rgb(229_72_77_/_0.6)]",
-    text: "text-shu",
-  },
+// Glow uses the same CSS custom properties as the bar/text (via color-mix),
+// so it re-tints correctly when the light/dark theme variables change.
+const TONE_STYLES: Record<Tone, { bar: string; glowVar: string; text: string; blur: string }> = {
+  calm: { bar: "bg-moss", glowVar: "var(--color-moss)", text: "text-moss", blur: "10px" },
+  warn: { bar: "bg-amber", glowVar: "var(--color-amber)", text: "text-amber", blur: "10px" },
+  urgent: { bar: "bg-shu", glowVar: "var(--color-shu)", text: "text-shu", blur: "12px" },
 };
 
 export function EmberBar({
@@ -88,8 +78,11 @@ export function EmberBar({
           style={{ width: `${fraction * 100}%` }}
         />
         <div
-          className={`absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full ${style.bar} ${style.glow}`}
-          style={{ left: `calc(${fraction * 100}% - 5px)` }}
+          className={`absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full ${style.bar}`}
+          style={{
+            left: `calc(${fraction * 100}% - 5px)`,
+            boxShadow: `0 0 ${style.blur} color-mix(in srgb, ${style.glowVar} 60%, transparent)`,
+          }}
         />
       </div>
     </div>

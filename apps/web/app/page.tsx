@@ -142,8 +142,8 @@ export default async function Landing() {
               />
               <defs>
                 <linearGradient id="beam" x1="0" y1="1" x2="0" y2="0">
-                  <stop offset="0%" stopColor="#e5484d" stopOpacity="0" />
-                  <stop offset="100%" stopColor="#e5484d" stopOpacity="0.55" />
+                  <stop offset="0%" style={{ stopColor: "var(--color-shu)", stopOpacity: 0 }} />
+                  <stop offset="100%" style={{ stopColor: "var(--color-shu)", stopOpacity: 0.55 }} />
                 </linearGradient>
               </defs>
             </svg>
