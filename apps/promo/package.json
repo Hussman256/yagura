@@ -1,0 +1,26 @@
+{
+  "name": "@yagura/promo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Remotion source for Yagura's promo video — not part of the shipped product.",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render Promo out/promo.mp4",
+    "still": "remotion still Promo"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@fontsource/shippori-mincho": "^5.3.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "remotion": "4.0.286"
+  },
+  "devDependencies": {
+    "@remotion/cli": "4.0.286",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.7.2"
+  }
+}
